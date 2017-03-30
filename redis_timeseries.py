@@ -71,7 +71,7 @@ from time import mktime
 
 try:
     import pytz
-except ImportError:
+except ImportError:  # pragma: no cover
     pytz = None
 
 
