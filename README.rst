@@ -7,7 +7,7 @@ Redis Timeseries
         :target: https://pypi.python.org/pypi/redis_timeseries
 
 .. image:: https://img.shields.io/travis/ryananguiano/redis_timeseries.svg
-        :target: https://travis-ci.org/ryananguiano/redis_timeseries
+        :target: https://travis-ci.org/ryananguiano/python-redis-timeseries
 
 .. image:: https://readthedocs.org/projects/redis-timeseries/badge/?version=latest
         :target: https://redis-timeseries.readthedocs.io/en/latest/?badge=latest
