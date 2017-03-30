@@ -135,7 +135,7 @@ class TimeSeries(object):
             pipe.hget(self.get_key(key, bucket, granularity), bucket)
 
         results = map(parse_result, pipe.execute())
-        return zip(buckets, results)
+        return list(zip(buckets, results))
 
     def get_total_hits(self, *args, **kwargs):
         return sum([hits for bucket, hits in self.get_hits(*args, **kwargs)])
@@ -160,6 +160,7 @@ class TimeSeries(object):
 
         parsed = set()
         for result in results:
+            result = result.decode('utf-8')
             for prefix in prefixes:
                 result = result.replace(prefix, '')
             parsed.add(result)
