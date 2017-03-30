@@ -68,6 +68,7 @@ __version__ = '0.1.0'
 from collections import OrderedDict
 from datetime import datetime
 from time import mktime
+import operator
 
 try:
     import pytz
@@ -150,9 +151,10 @@ class TimeSeries(object):
             hkeys.add(self.get_key(search, bucket, granularity))
             prefixes.add(self.get_key('', bucket, granularity))
 
-        results = []
+        pipe = self.client.pipeline()
         for key in hkeys:
-            results.extend(self.client.keys(key))
+            pipe.keys(key)
+        results = reduce(operator.add, pipe.execute())
 
         parsed = set()
         for result in results:
