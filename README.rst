@@ -52,7 +52,7 @@ count. It will record the data in all defined granularities.
     >>> ts.record_hit('event:123', datetime(2017, 1, 1, 13, 5))
     >>> ts.record_hit('event:123', count=5)
 
-`.record_hit()` will automatically execute when ``execute=True``. If you
+``.record_hit()`` will automatically execute when ``execute=True``. If you
 set ``execute=False``, you can chain the commands into a single redis
 pipeline. You must then execute the pipeline with ``.execute()``.
 
