@@ -1,15 +1,15 @@
-"""Redis TimeSeries
+"""Redis Timeseries
 
-This module can be used to store and query time series statistics
-in Redis. Multiple time granularities can be used to keep track
-of different intervals.
+Time series API built on top of Redis that can be used to store and query
+time series statistics. Multiple time granularities can be used to keep
+track of different time intervals.
 
 To initialize the TimeSeries class, you must pass a Redis client to
-access the database. You may also override the base key for the timeseries.
+access the database. You may also override the base key for the time series.
 
     >>> import redis
     >>> client = redis.StrictRedis()
-    >>> ts = TimeSeries(client)
+    >>> ts = TimeSeries(client, base_key='my_timeseries')
 
 To customize the granularities, make sure each granularity has a `ttl`
 and `duration` in seconds. You can use the helper functions for
