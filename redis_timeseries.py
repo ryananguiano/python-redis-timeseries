@@ -32,21 +32,29 @@ class TimeSeries(object):
         self.client = client
         self.base_key = base_key
         self.granularities = granularities or self.granularities
+        self.chain = self.client.pipeline()
 
     def get_key(self, key, timestamp, granularity):
         ttl = self.granularities[granularity]['ttl']
         timestamp_key = round_time(timestamp, ttl)
         return ':'.join([self.base_key, granularity, str(timestamp_key), str(key)])
 
-    def record_hit(self, key, timestamp=None, count=1):
-        pipe = self.client.pipeline()
+    def record_hit(self, key, timestamp=None, count=1, execute=True):
+        pipe = self.client.pipeline() if execute else self.chain
+
         for granularity, props in self.granularities.iteritems():
             hkey = self.get_key(key, timestamp, granularity)
             bucket = round_time(timestamp, props['duration'])
 
             pipe.hincrby(hkey, bucket, count)
             pipe.expire(hkey, props['ttl'])
-        pipe.execute()
+
+        if execute:
+            pipe.execute()
+
+    def execute(self):
+        self.chain.execute()
+        self.chain = self.client.pipeline()
 
     def get_hits(self, key, granularity, count, timestamp=None):
         props = self.granularities[granularity]
