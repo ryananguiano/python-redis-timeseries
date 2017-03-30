@@ -67,8 +67,10 @@ __version__ = '0.1.1'
 
 from collections import OrderedDict
 from datetime import datetime
-from time import mktime
+import functools
 import operator
+import six
+import time
 
 try:
     import pytz
@@ -105,7 +107,7 @@ class TimeSeries(object):
     def record_hit(self, key, timestamp=None, count=1, execute=True):
         pipe = self.client.pipeline() if execute else self.chain
 
-        for granularity, props in self.granularities.iteritems():
+        for granularity, props in six.iteritems(self.granularities):
             hkey = self.get_key(key, timestamp, granularity)
             bucket = round_time(timestamp, props['duration'])
 
@@ -154,7 +156,7 @@ class TimeSeries(object):
         pipe = self.client.pipeline()
         for key in hkeys:
             pipe.keys(key)
-        results = reduce(operator.add, pipe.execute())
+        results = functools.reduce(operator.add, pipe.execute())
 
         parsed = set()
         for result in results:
@@ -185,7 +187,7 @@ def tz_now():
 
 def dt_to_unix(dt):
     if isinstance(dt, datetime):
-        dt = mktime(dt.timetuple())
+        dt = time.mktime(dt.timetuple())
     return dt
 
 
