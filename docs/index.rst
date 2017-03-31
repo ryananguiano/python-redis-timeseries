@@ -8,7 +8,6 @@ Contents:
 
    readme
    installation
-   usage
    contributing
    history
 
