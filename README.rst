@@ -75,7 +75,7 @@ the buckets in the query.
 
 ``.scan_keys()`` will return a list of keys that could exist in the
 selected range. You can pass a search string to limit the keys returned.
-The search string should always have a `*` to define the wildcard.
+The search string should always have a ``*`` to define the wildcard.
 
     >>> ts.scan_keys('1minute', 10, 'event:*')
     ['event:123', 'event:456']

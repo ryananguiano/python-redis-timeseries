@@ -11,7 +11,6 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'redis',
-    'six',
 ]
 
 test_requirements = [

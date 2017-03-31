@@ -90,4 +90,3 @@ ENV/
 
 .idea/
 .DS_Store
-Makefile
