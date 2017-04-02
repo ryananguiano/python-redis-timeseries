@@ -31,6 +31,8 @@ Install
 
 To install Redis Timeseries, run this command in your terminal:
 
+.. code-block:: console
+
     $ pip install redis_timeseries
 
 
