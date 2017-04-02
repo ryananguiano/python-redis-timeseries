@@ -3,10 +3,15 @@ Redis Timeseries
 ===============================
 
 
+Time series API built on top of Redis that can be used to store and query
+time series statistics. Multiple time granularities can be used to keep
+track of different time intervals.
+
+
 .. image:: https://img.shields.io/pypi/v/redis_timeseries.svg
         :target: https://pypi.python.org/pypi/redis_timeseries
 
-.. image:: https://img.shields.io/travis/ryananguiano/redis_timeseries.svg
+.. image:: https://api.travis-ci.org/ryananguiano/python-redis-timeseries.svg?branch=master
         :target: https://travis-ci.org/ryananguiano/python-redis-timeseries
 
 .. image:: https://readthedocs.org/projects/redis-timeseries/badge/?version=latest
@@ -21,10 +26,16 @@ Redis Timeseries
 * Free software: MIT license
 * Documentation: https://redis-timeseries.readthedocs.io.
 
+Install
+-------
 
-Time series API built on top of Redis that can be used to store and query
-time series statistics. Multiple time granularities can be used to keep
-track of different time intervals.
+To install Redis Timeseries, run this command in your terminal:
+
+    $ pip install redis_timeseries
+
+
+Usage
+-----
 
 To initialize the TimeSeries class, you must pass a Redis client to
 access the database. You may also override the base key for the time series.
