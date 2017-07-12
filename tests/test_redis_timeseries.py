@@ -13,6 +13,8 @@ import pytest
 
 import redis_timeseries as timeseries
 
+TEST_GRANULARITIES = {'1m': {'ttl': timeseries.hours(1), 'duration': timeseries.minutes(1)}}
+
 
 @pytest.fixture
 def redis_client():
@@ -24,9 +26,12 @@ def redis_client():
 
 @pytest.fixture
 def ts(redis_client):
-    # Reduce granularities for easy testing
-    granularities = {'1m': {'ttl': timeseries.hours(1), 'duration': timeseries.minutes(1)}}
-    return timeseries.TimeSeries(redis_client, 'tests', granularities)
+    return timeseries.TimeSeries(redis_client, 'tests', granularities=TEST_GRANULARITIES)
+
+
+@pytest.fixture
+def ts_float(redis_client):
+    return timeseries.TimeSeries(redis_client, 'tests', use_float=True, granularities=TEST_GRANULARITIES)
 
 
 def test_client_connection(ts):
@@ -120,3 +125,14 @@ def test_scan_keys_search(ts):
     ts.record_hit('event:456')
     ts.record_hit('enter:123')
     assert ts.scan_keys('1m', 1, 'event:*') == ['event:123', 'event:456']
+
+
+def test_float_increase(ts_float):
+    ts_float.increase('account:123', 1.23)
+    assert ts_float.get_total_hits('account:123', '1m', 1) == 1.23
+
+
+def test_float_decrease(ts_float):
+    ts_float.increase('account:123', 5)
+    ts_float.decrease('account:123', 2.5)
+    assert ts_float.get_total_hits('account:123', '1m', 1) == 2.5

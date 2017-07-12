@@ -29,12 +29,13 @@ class TimeSeries(object):
         ('5minute', {'ttl': hours(6), 'duration': minutes(5)}),
         ('10minute', {'ttl': hours(12), 'duration': minutes(10)}),
         ('1hour', {'ttl': days(7), 'duration': hours(1)}),
-        ('1day', {'ttl': days(7), 'duration': days(1)}),
+        ('1day', {'ttl': days(30), 'duration': days(1)}),
     ])
 
-    def __init__(self, client, base_key='stats', granularities=None):
+    def __init__(self, client, base_key='stats', use_float=False, granularities=None):
         self.client = client
         self.base_key = base_key
+        self.use_float = use_float
         self.granularities = granularities or self.granularities
         self.chain = self.client.pipeline()
 
@@ -43,24 +44,28 @@ class TimeSeries(object):
         timestamp_key = round_time(timestamp, ttl)
         return ':'.join([self.base_key, granularity, str(timestamp_key), str(key)])
 
-    def record_hit(self, key, timestamp=None, count=1, execute=True):
+    def increase(self, key, amount, timestamp=None, execute=True):
         pipe = self.client.pipeline() if execute else self.chain
 
         for granularity, props in self.granularities.items():
             hkey = self.get_key(key, timestamp, granularity)
             bucket = round_time(timestamp, props['duration'])
 
-            pipe.hincrby(hkey, bucket, count)
+            self.hincrby(pipe, hkey, bucket, amount)
             pipe.expire(hkey, props['ttl'])
 
         if execute:
             pipe.execute()
 
-    def execute(self):
-        self.chain.execute()
-        self.chain = self.client.pipeline()
+    def decrease(self, key, amount, timestamp=None, execute=True):
+        return self.increase(key, -1 * amount, timestamp, execute)
 
-    def get_hits(self, key, granularity, count, timestamp=None):
+    def execute(self):
+        results = self.chain.execute()
+        self.chain = self.client.pipeline()
+        return results
+
+    def get_buckets(self, key, granularity, count, timestamp=None):
         props = self.granularities[granularity]
         if count > (props['ttl'] / props['duration']):
             raise ValueError('Count exceeds granularity limit')
@@ -73,11 +78,11 @@ class TimeSeries(object):
             buckets.append(unix_to_dt(bucket))
             pipe.hget(self.get_key(key, bucket, granularity), bucket)
 
-        results = map(parse_result, pipe.execute())
+        results = map(self.parse_result, pipe.execute())
         return list(zip(buckets, results))
 
-    def get_total_hits(self, *args, **kwargs):
-        return sum([hits for bucket, hits in self.get_hits(*args, **kwargs)])
+    def get_total(self, *args, **kwargs):
+        return sum([amount for bucket, amount in self.get_buckets(*args, **kwargs)])
 
     def scan_keys(self, granularity, count, search='*', timestamp=None):
         props = self.granularities[granularity]
@@ -106,11 +111,25 @@ class TimeSeries(object):
 
         return sorted(parsed)
 
+    def hincrby(self, pipe, hkey, bucket, amount):
+        if self.use_float:
+            pipe.hincrbyfloat(hkey, bucket, amount)
+        else:
+            pipe.hincrby(hkey, bucket, amount)
 
-def parse_result(val):
-    if val is None:
-        val = 0
-    return int(val)
+    def parse_result(self, val):
+        if self.use_float:
+            return float(val or 0)
+        else:
+            return int(val or 0)
+
+    # Deprecated
+
+    def record_hit(self, key, timestamp=None, count=1, execute=True):
+        self.increase(key, count, timestamp, execute)
+
+    get_hits = get_buckets
+    get_total_hits = get_total
 
 
 def round_time(dt, precision):

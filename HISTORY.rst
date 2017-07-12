@@ -2,6 +2,13 @@
 History
 =======
 
+0.1.4 (2017-07-12)
+------------------
+
+* Add float value capabilities
+* Add increase() and decrease() methods
+* Move get_hits() -> get_buckets() and get_total_hits() -> get_total()
+
 0.1.3 (2017-03-30)
 ------------------
 
