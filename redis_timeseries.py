@@ -25,11 +25,11 @@ days = lambda i: i * hours(24)
 
 class TimeSeries(object):
     granularities = OrderedDict([
-        ('1minute', {'ttl': hours(1), 'duration': minutes(1)}),
-        ('5minute', {'ttl': hours(6), 'duration': minutes(5)}),
-        ('10minute', {'ttl': hours(12), 'duration': minutes(10)}),
-        ('1hour', {'ttl': days(7), 'duration': hours(1)}),
-        ('1day', {'ttl': days(30), 'duration': days(1)}),
+        ('1minute', {'duration': minutes(1), 'ttl': hours(1)}),
+        ('5minute', {'duration': minutes(5), 'ttl': hours(6)}),
+        ('10minute', {'duration': minutes(10), 'ttl': hours(12)}),
+        ('1hour', {'duration': hours(1), 'ttl': days(7)}),
+        ('1day', {'duration': days(1), 'ttl': days(31)}),
     ])
 
     def __init__(self, client, base_key='stats', use_float=False, granularities=None):
@@ -51,14 +51,14 @@ class TimeSeries(object):
             hkey = self.get_key(key, timestamp, granularity)
             bucket = round_time(timestamp, props['duration'])
 
-            self.hincrby(pipe, hkey, bucket, amount)
+            self._hincrby(pipe, hkey, bucket, amount)
             pipe.expire(hkey, props['ttl'])
 
         if execute:
             pipe.execute()
 
     def decrease(self, key, amount, timestamp=None, execute=True):
-        return self.increase(key, -1 * amount, timestamp, execute)
+        self.increase(key, -1 * amount, timestamp, execute)
 
     def execute(self):
         results = self.chain.execute()
@@ -78,7 +78,7 @@ class TimeSeries(object):
             buckets.append(unix_to_dt(bucket))
             pipe.hget(self.get_key(key, bucket, granularity), bucket)
 
-        results = map(self.parse_result, pipe.execute())
+        results = map(self._parse_result, pipe.execute())
         return list(zip(buckets, results))
 
     def get_total(self, *args, **kwargs):
@@ -111,13 +111,13 @@ class TimeSeries(object):
 
         return sorted(parsed)
 
-    def hincrby(self, pipe, hkey, bucket, amount):
+    def _hincrby(self, pipe, hkey, bucket, amount):
         if self.use_float:
             pipe.hincrbyfloat(hkey, bucket, amount)
         else:
             pipe.hincrby(hkey, bucket, amount)
 
-    def parse_result(self, val):
+    def _parse_result(self, val):
         if self.use_float:
             return float(val or 0)
         else:
@@ -127,6 +127,9 @@ class TimeSeries(object):
 
     def record_hit(self, key, timestamp=None, count=1, execute=True):
         self.increase(key, count, timestamp, execute)
+
+    def remove_hit(self, key, timestamp=None, count=1, execute=True):
+        self.decrease(key, count, timestamp, execute)
 
     get_hits = get_buckets
     get_total_hits = get_total
