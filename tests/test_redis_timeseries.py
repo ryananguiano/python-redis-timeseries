@@ -15,7 +15,11 @@ import pytz
 
 import redis_timeseries as timeseries
 
-TEST_GRANULARITIES = {'1m': {'ttl': timeseries.hours(1), 'duration': timeseries.minutes(1)}}
+TEST_GRANULARITIES = OrderedDict([
+    ('1m', {'duration': timeseries.minutes(1), 'ttl': timeseries.hours(1)}),
+    ('1h', {'duration': timeseries.hours(1), 'ttl': timeseries.days(7)}),
+    ('1d', {'duration': timeseries.days(1), 'ttl': timeseries.days(31)}),
+])
 TIMEZONE_GRANULARITIES = OrderedDict([
     ('1hour', {'duration': timeseries.hours(1), 'ttl': timeseries.days(7)}),
     ('6hour', {'duration': timeseries.hours(6), 'ttl': timeseries.days(7)}),

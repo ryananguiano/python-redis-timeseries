@@ -134,6 +134,8 @@ class TimeSeries(object):
             rounded_dt = unix_to_dt(rounded).replace(tzinfo=None)
             offset = self.timezone.utcoffset(rounded_dt).total_seconds()
             rounded = int(rounded - offset)
+
+            dt = unix_to_dt(dt or tz_now())
             dt_seconds = (hours(dt.hour) + minutes(dt.minute) + seconds(dt.second))
             if offset < 0 and dt_seconds < abs(offset):
                 rounded -= precision
