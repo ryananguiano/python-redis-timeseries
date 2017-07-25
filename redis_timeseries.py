@@ -129,16 +129,16 @@ class TimeSeries(object):
 
     def _round_time(self, dt, precision):
         rounded = round_time(dt, precision)
-        if self.timezone:
+        # If precision is a multiple of 1 day, add timezone offset
+        if self.timezone and precision % days(1) == 0:
             rounded_dt = unix_to_dt(rounded).replace(tzinfo=None)
             offset = self.timezone.utcoffset(rounded_dt).total_seconds()
-            if precision and precision % days(1) == 0:
-                rounded = int(rounded - offset)
-                dt_seconds = (hours(dt.hour) + minutes(dt.minute) + seconds(dt.second))
-                if offset < 0 and dt_seconds < abs(offset):
-                    rounded -= precision
-                elif offset > 0 and dt_seconds > days(1) - offset:
-                    rounded += precision
+            rounded = int(rounded - offset)
+            dt_seconds = (hours(dt.hour) + minutes(dt.minute) + seconds(dt.second))
+            if offset < 0 and dt_seconds < abs(offset):
+                rounded -= precision
+            elif offset > 0 and dt_seconds > days(1) - offset:
+                rounded += precision
         return rounded
 
     # Deprecated
