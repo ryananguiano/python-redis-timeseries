@@ -101,6 +101,8 @@ Features
 * Redis pipeline chaining
 * Key scanner
 * Easy to integrate with charting packages
+* Can choose either integer or float counting
+* Date bucketing with timezone support
 
 Credits
 -------

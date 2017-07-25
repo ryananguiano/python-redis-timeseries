@@ -5,16 +5,19 @@ __email__ = 'ryan.anguiano@gmail.com'
 __version__ = '0.1.5'
 
 
-from collections import OrderedDict
-from datetime import datetime
+import calendar
 import functools
 import operator
-import time
+from collections import OrderedDict
+from datetime import datetime
 
 try:
     import pytz
 except ImportError:  # pragma: no cover
     pytz = None
+
+
+__all__ = ['TimeSeries', 'seconds', 'minutes', 'hours', 'days']
 
 
 seconds = lambda i: i
@@ -32,16 +35,17 @@ class TimeSeries(object):
         ('1day', {'duration': days(1), 'ttl': days(31)}),
     ])
 
-    def __init__(self, client, base_key='stats', use_float=False, granularities=None):
+    def __init__(self, client, base_key='stats', use_float=False, timezone=None, granularities=None):
         self.client = client
         self.base_key = base_key
         self.use_float = use_float
+        self.timezone = timezone
         self.granularities = granularities or self.granularities
         self.chain = self.client.pipeline()
 
     def get_key(self, key, timestamp, granularity):
         ttl = self.granularities[granularity]['ttl']
-        timestamp_key = round_time(timestamp, ttl)
+        timestamp_key = self._round_time(timestamp, ttl)
         return ':'.join([self.base_key, granularity, str(timestamp_key), str(key)])
 
     def increase(self, key, amount, timestamp=None, execute=True):
@@ -49,7 +53,7 @@ class TimeSeries(object):
 
         for granularity, props in self.granularities.items():
             hkey = self.get_key(key, timestamp, granularity)
-            bucket = round_time(timestamp, props['duration'])
+            bucket = self._round_time(timestamp, props['duration'])
 
             self._hincrby(pipe, hkey, bucket, amount)
             pipe.expire(hkey, props['ttl'])
@@ -72,7 +76,7 @@ class TimeSeries(object):
 
         pipe = self.client.pipeline()
         buckets = []
-        bucket = round_time(timestamp, props['duration']) - (count * props['duration'])
+        bucket = self._round_time(timestamp, props['duration']) - (count * props['duration'])
         for _ in range(count):
             bucket += props['duration']
             buckets.append(unix_to_dt(bucket))
@@ -91,7 +95,7 @@ class TimeSeries(object):
 
         hkeys = set()
         prefixes = set()
-        bucket = round_time(timestamp, props['duration']) - (count * props['duration'])
+        bucket = self._round_time(timestamp, props['duration']) - (count * props['duration'])
         for _ in range(count):
             bucket += props['duration']
             hkeys.add(self.get_key(search, bucket, granularity))
@@ -123,6 +127,20 @@ class TimeSeries(object):
         else:
             return int(val or 0)
 
+    def _round_time(self, dt, precision):
+        rounded = round_time(dt, precision)
+        if self.timezone:
+            rounded_dt = unix_to_dt(rounded).replace(tzinfo=None)
+            offset = self.timezone.utcoffset(rounded_dt).total_seconds()
+            if precision and precision % days(1) == 0:
+                rounded = int(rounded - offset)
+                dt_seconds = (hours(dt.hour) + minutes(dt.minute) + seconds(dt.second))
+                if offset < 0 and dt_seconds < abs(offset):
+                    rounded -= precision
+                elif offset > 0 and dt_seconds > days(1) - offset:
+                    rounded += precision
+        return rounded
+
     # Deprecated
 
     def record_hit(self, key, timestamp=None, count=1, execute=True):
@@ -149,7 +167,7 @@ def tz_now():
 
 def dt_to_unix(dt):
     if isinstance(dt, datetime):
-        dt = time.mktime(dt.timetuple())
+        dt = calendar.timegm(dt.utctimetuple())
     return dt
 
 

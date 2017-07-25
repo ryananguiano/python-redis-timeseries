@@ -14,7 +14,8 @@ requirements = [
 ]
 
 test_requirements = [
-    'pytest'
+    'pytest',
+    'pytz',
 ]
 
 setup(

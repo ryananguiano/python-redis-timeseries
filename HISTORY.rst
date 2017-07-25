@@ -2,6 +2,11 @@
 History
 =======
 
+0.1.6 (2017-07-25)
+------------------
+
+* Add timezone so day buckets will start at midnight in the correct timezone
+
 0.1.5 (2017-07-18)
 ------------------
 
