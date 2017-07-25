@@ -13,17 +13,16 @@ install: pip install -U tox
 language: python
 matrix:
   include:
-    - python:
-      - 3.5
-        env:
-        - TOXENV=py35
-        - TOXENV=py34
-        - TOXENV=py33
-        - TOXENV=py27
-        - TOXENV=pypy
-      - 3.6
-        env:
-        - TOXENV=py36
+    - python: 3.5
+      env:
+      - TOXENV=py35
+      - TOXENV=py34
+      - TOXENV=py33
+      - TOXENV=py27
+      - TOXENV=pypy
+    - python: 3.6
+      env:
+      - TOXENV=py36
 
 script: tox -e ${TOXENV}
 services:
