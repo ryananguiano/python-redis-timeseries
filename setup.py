@@ -20,7 +20,7 @@ test_requirements = [
 
 setup(
     name='redis_timeseries',
-    version='0.1.7',
+    version='0.1.8',
     description="Timeseries API built on top of Redis",
     long_description=readme + '\n\n' + history,
     author="Ryan Anguiano",
