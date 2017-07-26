@@ -20,11 +20,6 @@ TEST_GRANULARITIES = OrderedDict([
     ('1h', {'duration': timeseries.hours(1), 'ttl': timeseries.days(7)}),
     ('1d', {'duration': timeseries.days(1), 'ttl': timeseries.days(31)}),
 ])
-TIMEZONE_GRANULARITIES = OrderedDict([
-    ('1hour', {'duration': timeseries.hours(1), 'ttl': timeseries.days(7)}),
-    ('6hour', {'duration': timeseries.hours(6), 'ttl': timeseries.days(7)}),
-    ('1day', {'duration': timeseries.days(1), 'ttl': timeseries.days(31)}),
-])
 
 eastern = pytz.timezone('US/Eastern')
 
@@ -50,7 +45,7 @@ def ts_float(redis_client):
 
 @pytest.fixture
 def ts_timezone(redis_client):
-    return timeseries.TimeSeries(redis_client, 'timezone_tests', timezone=eastern, granularities=TIMEZONE_GRANULARITIES)
+    return timeseries.TimeSeries(redis_client, 'timezone_tests', timezone=eastern, granularities=TEST_GRANULARITIES)
 
 
 def test_client_connection(ts):
@@ -148,14 +143,16 @@ def test_scan_keys_search(ts):
 
 
 def test_float_increase(ts_float):
-    ts_float.increase('account:123', 1.23)
-    assert ts_float.get_total_hits('account:123', '1m', 1) == 1.23
+    ts = ts_float
+    ts.increase('account:123', 1.23)
+    assert ts.get_total_hits('account:123', '1m', 1) == 1.23
 
 
 def test_float_decrease(ts_float):
-    ts_float.increase('account:123', 5)
-    ts_float.decrease('account:123', 2.5)
-    assert ts_float.get_total_hits('account:123', '1m', 1) == 2.5
+    ts = ts_float
+    ts.increase('account:123', 5)
+    ts.decrease('account:123', 2.5)
+    assert ts.get_total_hits('account:123', '1m', 1) == 2.5
 
 
 test_timezone_round_days = [
@@ -175,3 +172,30 @@ test_timezone_round_days = [
 def test_timezone_round_time(ts_timezone, dt, precision, expected):
     tz_rounded = ts_timezone._round_time(dt, precision)
     assert timeseries.unix_to_dt(tz_rounded) == expected
+
+
+def test_get_total_hits_days(ts_timezone):
+    ts = ts_timezone
+    ts.record_hit('event:123', datetime(2017, 7, 12, 4, tzinfo=pytz.utc))
+    ts.record_hit('event:123', datetime(2017, 7, 13, 4, tzinfo=pytz.utc))
+    ts.record_hit('event:123', datetime(2017, 7, 15, 3, tzinfo=pytz.utc))
+    ts.record_hit('event:123', datetime(2017, 7, 15, 4, tzinfo=pytz.utc))
+    ts.record_hit('event:123', datetime(2017, 7, 15, 5, tzinfo=pytz.utc))
+    ts.record_hit('event:123', datetime(2017, 7, 16, 3, tzinfo=pytz.utc))
+    ts.record_hit('event:123', datetime(2017, 7, 16, 4, tzinfo=pytz.utc))
+    ts.record_hit('event:123', datetime(2017, 7, 16, 5, tzinfo=pytz.utc))
+
+    buckets = ts.get_buckets('event:123', '1d', 5, timestamp=datetime(2017, 7, 17, 0, tzinfo=pytz.utc))
+
+    assert len(buckets) == 5
+    assert buckets[0][0] == datetime(2017, 7, 12, 4, tzinfo=pytz.utc)
+    assert buckets[1][0] == datetime(2017, 7, 13, 4, tzinfo=pytz.utc)
+    assert buckets[2][0] == datetime(2017, 7, 14, 4, tzinfo=pytz.utc)
+    assert buckets[3][0] == datetime(2017, 7, 15, 4, tzinfo=pytz.utc)
+    assert buckets[4][0] == datetime(2017, 7, 16, 4, tzinfo=pytz.utc)
+
+    assert buckets[0][1] == 1
+    assert buckets[1][1] == 1
+    assert buckets[2][1] == 1
+    assert buckets[3][1] == 3
+    assert buckets[4][1] == 2

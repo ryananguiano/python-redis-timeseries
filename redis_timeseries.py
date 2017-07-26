@@ -45,7 +45,7 @@ class TimeSeries(object):
 
     def get_key(self, key, timestamp, granularity):
         ttl = self.granularities[granularity]['ttl']
-        timestamp_key = self._round_time(timestamp, ttl)
+        timestamp_key = round_time(timestamp, ttl)  # No timezone offset in the key
         return ':'.join([self.base_key, granularity, str(timestamp_key), str(key)])
 
     def increase(self, key, amount, timestamp=None, execute=True):
@@ -139,7 +139,7 @@ class TimeSeries(object):
             dt_seconds = (hours(dt.hour) + minutes(dt.minute) + seconds(dt.second))
             if offset < 0 and dt_seconds < abs(offset):
                 rounded -= precision
-            elif offset > 0 and dt_seconds > days(1) - offset:
+            elif offset > 0 and dt_seconds >= days(1) - offset:
                 rounded += precision
         return rounded
 
