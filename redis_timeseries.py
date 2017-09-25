@@ -35,7 +35,8 @@ class TimeSeries(object):
         ('1day', {'duration': days(1), 'ttl': days(31)}),
     ])
 
-    def __init__(self, client, base_key='stats', use_float=False, timezone=None, granularities=None):
+    def __init__(self, client, base_key='stats', use_float=False,
+                 timezone=None, granularities=None):
         self.client = client
         self.base_key = base_key
         self.use_float = use_float
@@ -53,9 +54,11 @@ class TimeSeries(object):
 
         for granularity, props in self.granularities.items():
             hkey = self.get_key(key, timestamp, granularity)
-            bucket = self._round_time(timestamp, props['duration'])
+            bucket = round_time_with_tz(timestamp, props['duration'], self.timezone)
 
-            self._hincrby(pipe, hkey, bucket, amount)
+            _incr = pipe.hincrbyfloat if self.use_float else pipe.hincrby
+            _incr(hkey, bucket, amount)
+
             pipe.expire(hkey, props['ttl'])
 
         if execute:
@@ -76,17 +79,25 @@ class TimeSeries(object):
 
         pipe = self.client.pipeline()
         buckets = []
-        bucket = self._round_time(timestamp, props['duration']) - (count * props['duration'])
+        rounded = round_time_with_tz(timestamp, props['duration'], self.timezone)
+        bucket = rounded - (count * props['duration'])
+
         for _ in range(count):
             bucket += props['duration']
             buckets.append(unix_to_dt(bucket))
             pipe.hget(self.get_key(key, bucket, granularity), bucket)
 
-        results = map(self._parse_result, pipe.execute())
+        _ = float if self.use_float else int
+        parse = lambda x: _(x or 0)
+
+        results = map(parse, pipe.execute())
+
         return list(zip(buckets, results))
 
     def get_total(self, *args, **kwargs):
-        return sum([amount for bucket, amount in self.get_buckets(*args, **kwargs)])
+        return sum([
+            amount for bucket, amount in self.get_buckets(*args, **kwargs)
+        ])
 
     def scan_keys(self, granularity, count, search='*', timestamp=None):
         props = self.granularities[granularity]
@@ -95,7 +106,9 @@ class TimeSeries(object):
 
         hkeys = set()
         prefixes = set()
-        bucket = self._round_time(timestamp, props['duration']) - (count * props['duration'])
+        rounded = round_time_with_tz(timestamp, props['duration'], self.timezone)
+        bucket = rounded - (count * props['duration'])
+
         for _ in range(count):
             bucket += props['duration']
             hkeys.add(self.get_key(search, bucket, granularity))
@@ -115,36 +128,6 @@ class TimeSeries(object):
 
         return sorted(parsed)
 
-    def _hincrby(self, pipe, hkey, bucket, amount):
-        if self.use_float:
-            pipe.hincrbyfloat(hkey, bucket, amount)
-        else:
-            pipe.hincrby(hkey, bucket, amount)
-
-    def _parse_result(self, val):
-        if self.use_float:
-            return float(val or 0)
-        else:
-            return int(val or 0)
-
-    def _round_time(self, dt, precision):
-        rounded = round_time(dt, precision)
-        # If precision is a multiple of 1 day, add timezone offset
-        if self.timezone and precision % days(1) == 0:
-            rounded_dt = unix_to_dt(rounded).replace(tzinfo=None)
-            offset = self.timezone.utcoffset(rounded_dt).total_seconds()
-            rounded = int(rounded - offset)
-
-            dt = unix_to_dt(dt or tz_now())
-            dt_seconds = (hours(dt.hour) + minutes(dt.minute) + seconds(dt.second))
-            if offset < 0 and dt_seconds < abs(offset):
-                rounded -= precision
-            elif offset > 0 and dt_seconds >= days(1) - offset:
-                rounded += precision
-        return rounded
-
-    # Deprecated
-
     def record_hit(self, key, timestamp=None, count=1, execute=True):
         self.increase(key, count, timestamp, execute)
 
@@ -158,6 +141,24 @@ class TimeSeries(object):
 def round_time(dt, precision):
     seconds = dt_to_unix(dt or tz_now())
     return int((seconds // precision) * precision)
+
+
+def round_time_with_tz(dt, precision, tz=None):
+    rounded = round_time(dt, precision)
+
+    if tz and precision % days(1) == 0:
+        rounded_dt = unix_to_dt(rounded).replace(tzinfo=None)
+        offset = tz.utcoffset(rounded_dt).total_seconds()
+        rounded = int(rounded - offset)
+
+        dt = unix_to_dt(dt or tz_now())
+        dt_seconds = (hours(dt.hour) + minutes(dt.minute) + seconds(dt.second))
+        if offset < 0 and dt_seconds < abs(offset):
+            rounded -= precision
+        elif offset > 0 and dt_seconds >= days(1) - offset:
+            rounded += precision
+
+    return rounded
 
 
 def tz_now():

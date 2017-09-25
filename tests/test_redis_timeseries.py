@@ -169,8 +169,8 @@ test_timezone_round_days = [
 
 
 @pytest.mark.parametrize('dt, precision, expected', test_timezone_round_days)
-def test_timezone_round_time(ts_timezone, dt, precision, expected):
-    tz_rounded = ts_timezone._round_time(dt, precision)
+def test_round_time_with_tz(dt, precision, expected):
+    tz_rounded = timeseries.round_time_with_tz(dt, precision, eastern)
     assert timeseries.unix_to_dt(tz_rounded) == expected
 
 
