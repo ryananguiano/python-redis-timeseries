@@ -87,8 +87,8 @@ class TimeSeries(object):
             buckets.append(unix_to_dt(bucket))
             pipe.hget(self.get_key(key, bucket, granularity), bucket)
 
-        _ = float if self.use_float else int
-        parse = lambda x: _(x or 0)
+        _type = float if self.use_float else int
+        parse = lambda x: _type(x or 0)
 
         results = map(parse, pipe.execute())
 
