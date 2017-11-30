@@ -110,7 +110,7 @@ def test_get_total_hits(ts):
     ts.record_hit('event:123', now - timedelta(minutes=2))
     ts.record_hit('event:123', now - timedelta(minutes=1))
     ts.record_hit('event:123')
-    ts.get_total_hits('event:123', '1m', 5) == 4
+    assert ts.get_total_hits('event:123', '1m', 5) == 4
 
 
 def test_get_total_hits_no_pytz(ts):
@@ -120,7 +120,7 @@ def test_get_total_hits_no_pytz(ts):
     ts.record_hit('event:123', now - timedelta(minutes=2))
     ts.record_hit('event:123', now - timedelta(minutes=1))
     ts.record_hit('event:123')
-    ts.get_total_hits('event:123', '1m', 5) == 4
+    assert ts.get_total_hits('event:123', '1m', 5) == 4
     timeseries.pytz = _pytz
 
 
