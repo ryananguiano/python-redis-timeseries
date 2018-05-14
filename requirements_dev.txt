@@ -6,4 +6,4 @@ PyYAML
 pytest==3.5.1
 pytz==2018.4
 Sphinx
-tox
+tox==3.0.0
