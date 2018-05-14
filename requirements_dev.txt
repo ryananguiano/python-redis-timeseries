@@ -1,7 +1,7 @@
 bumpversion==0.5.3
 coverage
 cryptography
-flake8
+flake8==3.5.0
 PyYAML
 pytest==3.5.1
 pytz==2018.4
