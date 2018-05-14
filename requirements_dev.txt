@@ -2,7 +2,7 @@ bumpversion==0.5.3
 coverage
 cryptography
 flake8
-PyYAML
+PyYAML==3.12
 pytest==3.5.1
 pytz==2018.4
 Sphinx
