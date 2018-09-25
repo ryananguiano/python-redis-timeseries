@@ -4,4 +4,4 @@ flake8==3.5.0
 pytest==3.8.0
 pytz==2018.5
 Sphinx==1.8.0
-tox==3.2.1
+tox==3.4.0
