@@ -177,5 +177,8 @@ def dt_to_unix(dt):
 def unix_to_dt(dt):
     if isinstance(dt, (int, float)):
         utc = pytz.utc if pytz else None
-        dt = datetime.fromtimestamp(dt, utc)
+        try:
+            dt = datetime.fromtimestamp(dt, utc)
+        except ValueError:
+            dt = datetime.fromtimestamp(dt / 1000., utc)
     return dt
