@@ -2,6 +2,6 @@ bumpversion==0.5.3
 coverage==4.5.4
 flake8==3.7.8
 pytest==5.0.1
-pytz==2019.2
+pytz==2019.3
 Sphinx==2.1.2
 tox==3.13.2
