@@ -1,6 +1,6 @@
 bumpversion==0.5.3
 coverage==4.5.4
-flake8==3.7.9
+flake8==5.0.2
 pytest==5.3.1
 pytz==2019.3
 Sphinx==2.2.2
